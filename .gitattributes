@@ -1,0 +1,11 @@
+# Normalise line endings to LF in the repository, and keep working copies
+# native (CRLF on Windows) so the files open correctly in the local editor.
+* text=auto eol=lf
+
+*.py   text diff=python
+*.md   text
+*.yaml text
+*.yml  text
+*.txt  text
+*.json text
+LICENSE text
