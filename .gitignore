@@ -1,0 +1,56 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing / coverage
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Local data (the SCADA CSV is not redistributed; see README)
+data/
+*.csv
+
+# Model weights and caches
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+huggingface/
+hub/
+
+# Benchmark output
+benchmark_cost*.json
+benchmark_baselines*.json
+*.log
+
+# Nested placeholder repositories created by GitHub Desktop (empty, gitignored)
+fdhf/fdhf/
+fdhf/project/

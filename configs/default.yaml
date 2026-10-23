@@ -1,0 +1,115 @@
+# =============================================================================
+# FDHF default configuration
+# All values are taken from the manuscript
+# "Few-shot power prediction for newly-built photovoltaic power stations:
+#  A new framework integrating LLM and data augmentation methods"
+# (Applied Soft Computing, submission folder: 第二篇/数据修改10)
+# =============================================================================
+
+data:
+  # Path to the SCADA CSV exported from the Shandong University PV dataset.
+  # Expected columns: a datetime column + one column per feature + the target.
+  path: "data/pv_scada.csv"
+  datetime_col: "datetime"
+  target_col: "power"            # PV output power (MW)
+  # Exogenous meteorological columns (multi-channel MVMD inputs)
+  feature_cols:
+    - GHI
+    - DNI
+    - temperature
+    - wind_speed
+    - wind_direction
+    - pressure
+    - DHI
+    - local_temp
+    - local_pressure
+    - local_wind_speed
+    - local_wind_direction
+  resolution_min: 15
+  input_len: 96                  # 24 h look-back window
+  pred_len: 24                   # 6 h forecast horizon
+  station_lat: 36.644            # Henan station latitude (manuscript 4.1)
+  station_lon: 113.642           # Henan station longitude (manuscript 4.1)
+  capacity_mw: 20.0              # rated capacity (clip predictions to [0, cap])
+  # Chronological split (no leakage):
+  #   full = [train_period(70%) | test(30%)]
+  #   train_period = [actual_train(85%) | val(15%)]
+  # scarce subsets are the first {15,30,45}% of train_period (disjoint from val)
+  train_ratio: 0.70
+  val_ratio_in_train: 0.15       # last 15% of train_period
+  scarce_ratios: [0.15, 0.30, 0.45]
+  night_exclude: true            # (legacy) see metrics: section below
+
+# -----------------------------------------------------------------------------
+# Evaluation metrics (manuscript Section 4.1)
+#   - MAE / RMSE / R2 only, computed on the physical power scale (MW)
+#   - night (solar elevation < 0) excluded from the metrics
+#   - predictions optionally clamped to [0, rated_capacity] (paper B7, [0,20MW])
+# -----------------------------------------------------------------------------
+metrics:
+  night_exclude: true             # exclude solar-elevation<0 (zero-power) periods
+  clip_to_capacity: true          # clamp predictions to [0, capacity_mw] (paper B7)
+
+decomposition:
+  mvmd:
+    K: 6                         # number of multivariate IMFs
+    alpha: 2000                  # bandwidth constraint (quadratic penalty)
+    tolerance: 1.0e-3
+    init: 1                      # 1 = linearly distributed center frequencies
+    max_iter: 500
+  elastic_net:
+    alpha: 0.01                  # EN penalty strength (distinct from MVMD alpha)
+    l1_ratio: 0.5                # mix of L1/L2; grid was {0.1,0.3,0.5,0.7,0.9}x{1e-3,1e-2,1e-1,1}
+  freq_separation:
+    sample_entropy_threshold: 0.13   # S; selected on validation set
+    m: 2                             # sample entropy embedding dimension
+    r_factor: 0.2                     # r = r_factor * std(x)
+
+normalization:
+  method: minmax                 # min/max computed on actual training subset only
+
+low_freq_branch:                 # Time-LLM
+  backbone: "gpt2"               # GPT-2-Small (Decoder-only, frozen)
+  llm_dim: 768
+  patch_len: 16
+  patch_stride: 8
+  freeze_backbone: true
+  # Prompt-as-Prefix (PaP): dataset description + task instruction + statistics
+  use_pap: true
+  prompt_bank: "pv"
+  # NOTE: 10 epochs / lr 1e-4 / batch 32 were cited from the manuscript; the
+  # exact training schedule line was truncated during text extraction. Verify
+  # against the final manuscript before submission.
+  max_epochs: 10
+  batch_size: 32
+  learning_rate: 1.0e-4
+  weight_decay: 1.0e-4
+
+high_freq_branch:                # WGAN-GP + XGBoost
+  wgan_gp:
+    hidden_size: 64              # GRU hidden size (gen & disc)
+    latent_dim: 32
+    epochs: 500
+    batch_size: 32
+    lambda_gp: 10                # gradient-penalty coefficient
+    n_critic: 5                  # critic updates per generator update
+    lr_g: 1.0e-4
+    lr_d: 1.0e-4
+    synthetic_to_real_ratio: 1.0 # generate as many synthetic as real samples
+  xgboost:
+    n_estimators: 500
+    max_depth: 5
+    learning_rate: 0.05
+    subsample: 0.8
+    colsample_bytree: 0.8
+    n_jobs: -1
+
+fusion:
+  method: ridge                  # ridge-regression meta-learner
+  alpha: 1.0
+  out_of_fold: true              # fit fusion weights on validation only
+
+training:
+  seeds: [2024, 2025, 2026, 2027, 2028]   # 5 fixed seeds (paper)
+  device: "cuda"                 # "cuda" or "cpu"
+  experiment: full               # full | scarce15 | scarce30 | scarce45

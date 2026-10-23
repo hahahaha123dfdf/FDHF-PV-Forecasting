@@ -1,0 +1,32 @@
+# FDHF (Frequency-Domain Decoupled Hybrid Forecasting) framework
+# Few-shot PV power prediction integrating LLM + data augmentation
+#
+# Reference environment (as stated in the manuscript): Python 3.12, PyTorch 2.4
+# Verified to run also on: Python 3.9.13, PyTorch 2.0.1+cu118
+#
+# Install the pinned versions used in the reported experiments with:
+#   pip install -r requirements-lock.txt
+# or install the flexible minimum set with:
+#   pip install -r requirements.txt
+
+# --- Core scientific stack ---
+numpy>=1.23
+pandas>=1.5
+scikit-learn>=1.2
+scipy>=1.5
+
+# --- Decomposition (MVMD is vendored under fdhf/decomposition/mvmd.py, MIT) ---
+
+# --- Low-frequency branch: Time-LLM (frozen GPT-2 backbone) ---
+torch>=2.0
+transformers>=4.31
+einops>=0.7
+accelerate>=0.20
+sentencepiece>=0.2
+
+# --- High-frequency branch: WGAN-GP + XGBoost ---
+xgboost>=2.0
+
+# --- Config / utilities ---
+pyyaml>=6.0
+tqdm>=4.65
