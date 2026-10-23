@@ -33,8 +33,10 @@ Thumbs.db
 # Jupyter
 .ipynb_checkpoints/
 
-# Local data (the SCADA CSV is not redistributed; see README)
-data/
+# Local data (the SCADA CSV is not redistributed; see README).
+# Anchored to the repository root so that the source package fdhf/data/ is
+# NOT excluded.
+/data/
 *.csv
 
 # Model weights and caches
